@@ -152,6 +152,30 @@ ANWB day-label requests for one local day. No more than four tariff fetches run
 concurrently. Once warm, closed days and completed months make no further
 tariff requests; only open or still-missing periods are retried.
 
+## 2026-10-11 Upstream Android App Verification (v6.30.1)
+
+On 2026-10-11, the official Android app `nl.anwb.energie` version `6.30.1` (build `1301`, built with Expo SDK 56) was decompiled and analyzed to verify upstream API alignment.
+
+Observed configuration and endpoint mapping:
+
+- **OAuth Authentication**:
+  - The Android client ID remains `57fe1448-00e6-47f2-bb50-c0935640b1fa` (iOS client ID is `e418d1d5-bb4d-4578-886c-e78adbe2b32c`).
+  - OAuth endpoints remain `https://login.anwb.nl/49acae90-1d8b-46a5-943a-33da44624219/login/{authorize,token,token/revoke}`.
+  - Energy services base URL remains `https://api.anwb.nl/energy/energy-services`.
+  - Kraken token exchange endpoint remains `/v1/auth/kraken-token` and GraphQL remains `https://api.anwb-kraken.energy/v1/graphql/`.
+
+- **Account Cache & Telemetry**:
+  - Historical electricity consumption, production, and gas telemetry endpoints continue to use `/v1/accounts/{account_number}/{electricity,production,gas}/cache` with `startDate`, `endDate`, `contractStartDate`, and `interval` parameters.
+
+- **Dynamic Tariffs**:
+  - The integration's interval endpoints `/v2/tarieven/{electricity,gas}` remain active and are required for querying arbitrary date ranges and intervals (`interval=HOUR`, `interval=DAY`).
+  - Upstream introduced `/v3/tarieven/electricity/actueel` and `/v3/tarieven/gas/actueel` for real-time mobile widgets:
+    - `/v3/tarieven/electricity/actueel` requires no query parameters and returns a 72-hour rolling hourly price series (`date`, `marktprijs`, `allInPrijs`) covering yesterday, today, and tomorrow.
+    - `/v3/tarieven/gas/actueel` requires no query parameters and returns today's 24 hourly points along with a `currentPrices` object indicating prices `until6` (06:00 gas-day boundary) and `after6`.
+
+- **Account Tussenstand**:
+  - The upstream app uses `/v3/accounts/{account_number}/tussenstand` for the annual balance projection screen. Probing confirmed this endpoint requires query parameters `maandbedrag` and `contractStartDate`, returning HTTP 401 without a valid Kraken token.
+
 ## Re-Verification Workflow
 
 Use `scripts/anwb_api_probe.py` to re-check whether account-cache cost fields are
