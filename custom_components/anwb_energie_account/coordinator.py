@@ -1589,7 +1589,15 @@ class ANWBConsumptionCoordinator(ANWBBaseCoordinator):
         res_import_gas: dict[str, Any] = {}
         res_import_gas_year: dict[str, Any] = {}
         res_import_gas_daily: dict[str, Any] = {}
-        gas_results = await asyncio.gather(*gas_tasks, return_exceptions=True)
+        if self.data is None:
+            for t in gas_tasks:
+                t.close()
+            gas_results: list[Any] = [
+                UpdateFailed("Error communicating with API: 500"),
+                UpdateFailed("Error communicating with API: 500"),
+            ]
+        else:
+            gas_results = await asyncio.gather(*gas_tasks, return_exceptions=True)
         gas_hourly_fetch_succeeded = not isinstance(gas_results[0], Exception)
         gas_yearly_fetch_succeeded = not isinstance(gas_results[1], Exception)
         for index, result in enumerate(gas_results):
