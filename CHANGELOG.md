@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/adrighem/ha-anwb-energie/compare/v1.4.0...v1.4.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* allow setup when initial gas cache request fails (fixes [#26](https://github.com/adrighem/ha-anwb-energie/issues/26)) ([38eac23](https://github.com/adrighem/ha-anwb-energie/commit/38eac235fd3517ebf0a601075798167c9ba01c6e))
+
 ## [1.4.0](https://github.com/adrighem/ha-anwb-energie/compare/v1.3.5...v1.4.0) (2026-10-04)
 
 
