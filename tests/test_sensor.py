@@ -486,7 +486,7 @@ async def test_clean_install_without_gas_does_not_expose_gas_entities():
 @pytest.mark.asyncio
 async def test_gas_entities_are_added_when_contract_is_detected_later():
     """Test a new gas contract does not require reloading the integration."""
-    added_entities, _, consumption, _ = await _setup_entities(has_gas=False)
+    added_entities, _, consumption, pricing = await _setup_entities(has_gas=False)
     assert {entity.entity_description.key for entity in added_entities}.isdisjoint(
         GAS_SENSOR_KEYS
     )
@@ -503,10 +503,12 @@ async def test_gas_entities_are_added_when_contract_is_detected_later():
         "gas_year_to_date_cost",
         "gas_current_price",
     } <= {entity.entity_description.key for entity in added_entities}
+    pricing.async_request_refresh.assert_called_once()
 
     entity_count = len(added_entities)
     consumption.listeners[0]()
     assert len(added_entities) == entity_count
+    pricing.async_request_refresh.assert_called_once()
 
 
 @pytest.mark.asyncio

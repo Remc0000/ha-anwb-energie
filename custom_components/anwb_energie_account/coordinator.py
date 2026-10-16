@@ -1610,15 +1610,6 @@ class ANWBConsumptionCoordinator(ANWBBaseCoordinator):
         inferred_has_gas = bool(
             res_import_gas.get("data") or res_import_gas_year.get("data")
         )
-        if (
-            self.data is None
-            and not inferred_has_gas
-            and not (gas_hourly_fetch_succeeded and gas_yearly_fetch_succeeded)
-        ):
-            raise UpdateFailed(
-                "Unable to determine whether the account has gas because a gas "
-                "cache request failed"
-            )
 
         previous_has_gas = bool(
             isinstance(self.data, dict) and self.data.get("has_gas") is True

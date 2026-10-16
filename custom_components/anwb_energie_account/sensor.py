@@ -527,13 +527,20 @@ async def async_setup_entry(
 
     async_add_entities(_new_entities())
 
+    pricing_refresh_requested = bool((data.consumption.data or {}).get("has_gas"))
+
     @callback
     def _async_discover_gas_entities() -> None:
         """Add gas entities if gas is detected after platform setup."""
+        nonlocal pricing_refresh_requested
         if not bool((data.consumption.data or {}).get("has_gas")):
             return
         if entities := _new_entities():
             async_add_entities(entities)
+        if not pricing_refresh_requested:
+            pricing_refresh_requested = True
+            if not (data.pricing.data or {}).get("gas_prices_today"):
+                hass.async_create_task(data.pricing.async_request_refresh())
 
     entry.async_on_unload(
         data.consumption.async_add_listener(_async_discover_gas_entities)

@@ -2277,8 +2277,8 @@ async def test_failed_gas_cache_does_not_reuse_previous_year_cost(auth_mock):
 
 
 @pytest.mark.asyncio
-async def test_initial_gas_cache_failure_retries_contract_detection(auth_mock):
-    """Test first setup retries instead of permanently omitting gas entities."""
+async def test_initial_gas_cache_failure_degrades_gracefully_and_recovers(auth_mock):
+    """Test first setup succeeds with electricity when gas cache fails, then recovers."""
     hass = MagicMock()
     coordinator = ANWBConsumptionCoordinator(hass, auth_mock, MagicMock())
     coordinator._kraken_token = "mock_kraken_token"
@@ -2286,10 +2286,22 @@ async def test_initial_gas_cache_failure_retries_contract_detection(auth_mock):
     coordinator._account_address = "Mock Address"
 
     mock_now = datetime.datetime(2026, 4, 20, 12, tzinfo=datetime.timezone.utc)
+    gas_should_fail = True
 
     async def mock_fetch_side_effect(url, token):
         if "gas/cache" in url:
-            raise UpdateFailed("temporary gas cache failure")
+            if gas_should_fail:
+                raise UpdateFailed("temporary gas cache failure")
+            if "interval=HOUR" in url:
+                return {
+                    "data": [
+                        {
+                            "date": "2026-04-01T00:00:00Z",
+                            "usage": 2.5,
+                            "price": 3.0,
+                        }
+                    ]
+                }
         return {"data": []}
 
     with (
@@ -2301,8 +2313,17 @@ async def test_initial_gas_cache_failure_retries_contract_detection(auth_mock):
         patch.object(coordinator, "_insert_statistics", new_callable=AsyncMock),
     ):
         mock_fetch.side_effect = mock_fetch_side_effect
-        with pytest.raises(UpdateFailed, match="determine whether the account has gas"):
-            await coordinator._async_update_data_internal()
+        first_result = await coordinator._async_update_data_internal()
+        assert first_result["has_gas"] is False
+        assert first_result["gas_month_to_date"] == 0.0
+        assert first_result["gas_year_to_date"] == 0.0
+
+        coordinator.data = first_result
+        gas_should_fail = False
+        second_result = await coordinator._async_update_data_internal()
+        assert second_result["has_gas"] is True
+        assert second_result["gas_month_data_available"] is True
+        assert second_result["gas_month_to_date"] == 2.5
 
 
 @pytest.mark.asyncio
