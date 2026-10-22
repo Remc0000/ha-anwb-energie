@@ -143,7 +143,9 @@ components:
         Tariff aggregation interval. HOUR returns hourly electricity and gas
         data for a single-day range. Complete closed-local-day HOUR tariff sets
         are persisted in the integration-local tariff cache for month-to-date
-        estimates, while the current day and tomorrow remain refreshable. DAY
+        estimates, while the current day and tomorrow remain refreshable.
+        Electricity market-price gaps remain retryable even when all-in prices
+        are complete and persisted; gas does not require market prices. DAY
         returned multi-day data during the 2026-07-23 verification. Finite DAY
         points are persisted individually for year-to-date estimates, which
         remain unavailable until every non-zero usage day has a tariff.
